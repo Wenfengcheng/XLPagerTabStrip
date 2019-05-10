@@ -18,14 +18,21 @@ namespace XLPagerTabStrip
             Title = title;
         }
 
-        public IndicatorInfo(string title, UIImage image, object userInfo) : this()
+        public IndicatorInfo(UIImage image, UIImage highlightedImage = null, object userInfo = null) : this()
+        {
+            Image = image;
+            HighlightedImage = highlightedImage;
+            UserInfo = userInfo;
+        }
+
+        public IndicatorInfo(string title, UIImage image, object userInfo = null) : this()
         {
             Title = title;
             Image = image;
             UserInfo = userInfo;
         }
 
-        public IndicatorInfo(string title, UIImage image, UIImage highlightedImage, object userInfo) : this()
+        public IndicatorInfo(string title, UIImage image, UIImage highlightedImage = null, object userInfo = null) : this()
         {
             Title = title;
             AccessibilityLabel = title;
@@ -34,7 +41,7 @@ namespace XLPagerTabStrip
             UserInfo = userInfo;
         }
 
-        public IndicatorInfo(string title, string accessibilityLabel, UIImage image, UIImage highlightedImage, object userInfo) : this()
+        public IndicatorInfo(string title, string accessibilityLabel, UIImage image, UIImage highlightedImage = null, object userInfo = null) : this()
         {
             Title = title;
             AccessibilityLabel = accessibilityLabel;

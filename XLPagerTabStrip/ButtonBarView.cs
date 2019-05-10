@@ -9,7 +9,9 @@ namespace XLPagerTabStrip
     [Register("ButtonBarView")]
     public class ButtonBarView : UICollectionView
     {
-        SelectedBarAlignment selectedBarAlignment = SelectedBarAlignment.Center;
+        public SelectedBarAlignment SelectedBarAlignment { get; set; } = SelectedBarAlignment.Center;
+        public SelectedBarVerticalAlignment SelectedBarVerticalAlignment { get; set; } = SelectedBarVerticalAlignment.Bottom;
+
         int selectedIndex = 0;
 
         #region Public properties
@@ -138,8 +140,7 @@ namespace XLPagerTabStrip
                 targetContentOffset = fromContentOffset + ((toContentOffset - fromContentOffset) * progressPercentage);
             }
 
-            var animated = Math.Abs(ContentOffset.X - targetContentOffset) > 30 || (fromIndex == toIndex);
-            SetContentOffset(new CGPoint(targetContentOffset, 0), animated: animated);
+            SetContentOffset(new CGPoint(targetContentOffset, 0), animated: false);
         }
 
         public void UpdateSelectedBarPosition(bool animated, SwipeDirection swipeDirection, PagerScroll pagerScroll)
@@ -192,7 +193,7 @@ namespace XLPagerTabStrip
             var sectionInset = (CollectionViewLayout as UICollectionViewFlowLayout).SectionInset;
             nfloat alignmentOffset = new nfloat(0.0);
 
-            switch (selectedBarAlignment)
+            switch (SelectedBarAlignment)
             {
                 case SelectedBarAlignment.Left:
                     alignmentOffset = sectionInset.Left;
@@ -222,11 +223,29 @@ namespace XLPagerTabStrip
         private void UpdateSelectedBarYPosition()
         {
             var selectedBarFrame = SelectedBar.Frame;
-            selectedBarFrame.Y = Frame.Size.Height - SelectedBarHeight;
+
+            switch (SelectedBarVerticalAlignment)
+            {
+                case SelectedBarVerticalAlignment.Top:
+                    selectedBarFrame.Y = 0;
+                    break;
+                case SelectedBarVerticalAlignment.Middle:
+                    selectedBarFrame.Y = (Frame.Size.Height - SelectedBarHeight) / 2;
+                    break;
+                case SelectedBarVerticalAlignment.Bottom:
+                    selectedBarFrame.Y = Frame.Size.Height - SelectedBarHeight;
+                    break;
+            }
+
             selectedBarFrame.Size = new CGSize(selectedBarFrame.Size.Width, SelectedBarHeight);
             SelectedBar.Frame = selectedBarFrame;
         }
 
+        public override void LayoutSubviews()
+        {
+            base.LayoutSubviews();
+            UpdateSelectedBarYPosition();
+        }
         #endregion
     }
 
@@ -243,6 +262,13 @@ namespace XLPagerTabStrip
         Center,
         Right,
         Progressive,
+    }
+
+    public enum SelectedBarVerticalAlignment
+    {
+        Top,
+        Middle,
+        Bottom
     }
 }
 
