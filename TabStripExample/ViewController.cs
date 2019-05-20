@@ -73,6 +73,8 @@ namespace TabStripExample
 			Settings.Style.ButtonBarItemFont = UIFont.BoldSystemFontOfSize(12);
 			Settings.Style.SelectedBarHeight = 2;
             Settings.Style.SelectedBarWidth = 40;
+            Settings.Style.SelectedBarAlignment = SelectedBarAlignment.Left;
+            Settings.Style.SelectedBarVerticalAlignment = SelectedBarVerticalAlignment.Bottom;
             Settings.Style.ButtonBarMinimumLineSpacing = 0;
 			Settings.Style.ButtonBarItemTitleColor = UIColor.White;
 			Settings.Style.ButtonBarItemsShouldFillAvailiableWidth = true;

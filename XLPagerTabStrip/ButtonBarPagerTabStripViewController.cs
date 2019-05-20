@@ -54,7 +54,7 @@ namespace XLPagerTabStrip
             return labelSize.Width + (this?.Settings.Style.ButtonBarItemLeftRightMargin ?? 8) * 2;
         }
 
-        private nfloat?[] cachedCellWidths { get; set; }
+        private nfloat?[] CachedCellWidths { get; set; }
 
         private bool shouldUpdateButtonBarView = true;
         #endregion
@@ -64,6 +64,8 @@ namespace XLPagerTabStrip
         {
             Delegate = this;
             DataSource = this;
+            Func<IndicatorInfo, nfloat> widthCallback = GetWidth;
+            ButtonBarItemSpec = ButtonBarItemSpec<ButtonBarViewCell>.Create(widthCallback, "ButtonCell", null);
         }
 
         [Export("initWithCoder:")]
@@ -72,19 +74,23 @@ namespace XLPagerTabStrip
             Delegate = this;
             DataSource = this;
             Func<IndicatorInfo, nfloat> widthCallback = GetWidth;
-            ButtonBarItemSpec = ButtonBarItemSpec<ButtonBarViewCell>.Create(widthCallback, "ButtonCell", NSBundle.FromClass(new ObjCRuntime.Class(typeof(ButtonBarViewCell))));
+            ButtonBarItemSpec = ButtonBarItemSpec<ButtonBarViewCell>.Create(widthCallback, "ButtonCell", null);
         }
 
         public ButtonBarPagerTabStripViewController(NSCoder coder) : base(coder)
         {
             Delegate = this;
             DataSource = this;
+            Func<IndicatorInfo, nfloat> widthCallback = GetWidth;
+            ButtonBarItemSpec = ButtonBarItemSpec<ButtonBarViewCell>.Create(widthCallback, "ButtonCell", null);
         }
 
         public ButtonBarPagerTabStripViewController(string nibName, NSBundle bundle) : base(nibName, bundle)
         {
             Delegate = this;
             DataSource = this;
+            Func<IndicatorInfo, nfloat> widthCallback = GetWidth;
+            ButtonBarItemSpec = ButtonBarItemSpec<ButtonBarViewCell>.Create(widthCallback, "ButtonCell", null);
         }
         #endregion
 
@@ -96,8 +102,8 @@ namespace XLPagerTabStrip
             if (ButtonBarView == null)
                 ButtonBarView = InitializeButtonBarView();
 
-            if (cachedCellWidths == null)
-                cachedCellWidths = CalculateWidths();            
+            if (CachedCellWidths == null)
+                CachedCellWidths = CalculateWidths();            
             
             if (ButtonBarView.Superview == null)
             {
@@ -126,17 +132,13 @@ namespace XLPagerTabStrip
 
             ButtonBarView.SelectedBarHeight = Settings.Style.SelectedBarHeight ?? ButtonBarView.SelectedBarHeight;
             ButtonBarView.SelectedBarWidth = Settings.Style.SelectedBarWidth ?? ButtonBarView.SelectedBarWidth;
+            ButtonBarView.SelectedBarVerticalAlignment = Settings.Style.SelectedBarVerticalAlignment;
 
             //register button bar item cell
             if (ButtonBarItemSpec.NibName != null)
                 ButtonBarView.RegisterNibForCell(UINib.FromName(ButtonBarItemSpec.NibName, ButtonBarItemSpec.Bundle), "Cell");
             else
                 ButtonBarView.RegisterClassForCell(typeof(ButtonBarViewCell), "Cell");
-        }
-
-        public override void AwakeFromNib()
-        {
-            base.AwakeFromNib();
         }
 
         public override void ViewWillAppear(bool animated)
@@ -160,13 +162,14 @@ namespace XLPagerTabStrip
                 // b) The view is rotating.  This ensures that
                 //    collectionView:layout:sizeForItemAtIndexPath: is called again and can use the views
                 //    *new* frame so that the buttonBarView cell's actually get resized correctly
-                cachedCellWidths = CalculateWidths();
+                CachedCellWidths = CalculateWidths();
                 ButtonBarView.CollectionViewLayout.InvalidateLayout();
 
                 // When the view first appears or is rotated we also need to ensure that the barButtonView's
                 // selectedBar is resized and its contentOffset/scroll is set correctly (the selected
                 // tab/cell may end up either skewed or off screen after a rotation otherwise)
                 ButtonBarView.MoveToIndex((int)CurrentIndex, animated: false, swipeDirection: SwipeDirection.None, pagerScroll: PagerScroll.ScrollOnlyIfOutOfScreen);
+                ButtonBarView.SelectItem(NSIndexPath.FromRowSection((System.nint)CurrentIndex, 0), false, UICollectionViewScrollPosition.None);
             }
         }
 
@@ -176,7 +179,7 @@ namespace XLPagerTabStrip
             if (IsViewLoaded)
             {
                 ButtonBarView.ReloadData();
-                cachedCellWidths = CalculateWidths();
+                CachedCellWidths = CalculateWidths();
                 ButtonBarView.MoveToIndex((int)CurrentIndex, animated: false, swipeDirection: SwipeDirection.None, pagerScroll: PagerScroll.Yes);
             }
         }
@@ -249,7 +252,7 @@ namespace XLPagerTabStrip
         [Export("collectionView:layout:sizeForItemAtIndexPath:")]
         public CGSize GetSizeForItem(UICollectionView collectionView, UICollectionViewLayout layout, NSIndexPath indexPath)
         {
-            var cellWidthValue = cachedCellWidths?[indexPath.Row];
+            var cellWidthValue = CachedCellWidths?[indexPath.Row];
             if (cellWidthValue == null)
             {
                 throw new NullReferenceException($"cachedCellWidths for {indexPath.Row} must not be null");
@@ -425,6 +428,8 @@ namespace XLPagerTabStrip
         public UIColor SelectedBarBackgroundColor { get; set; } = UIColor.Black;
         public nfloat? SelectedBarHeight { get; set; } = 5;
         public nfloat? SelectedBarWidth { get; set; }
+        public SelectedBarAlignment SelectedBarAlignment { get; set; } = SelectedBarAlignment.Center;
+        public SelectedBarVerticalAlignment SelectedBarVerticalAlignment { get; set; } = SelectedBarVerticalAlignment.Bottom;
 
         public UIColor ButtonBarItemBackgroundColor { get; set; }
         public UIFont ButtonBarItemFont { get; set; } = UIFont.SystemFontOfSize(18);
