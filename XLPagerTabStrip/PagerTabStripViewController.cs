@@ -67,7 +67,6 @@ namespace XLPagerTabStrip
                 }
 
                 return 1 - fmod(ContainerView.ContentOffset.X >= 0 ? ContainerView.ContentOffset.X : PageWidth + ContainerView.ContentOffset.X, PageWidth) / PageWidth;
-                return 1 - (ContainerView.ContentOffset.X >= 0 ? ContainerView.ContentOffset.X : PageWidth + ContainerView.ContentOffset.X % PageWidth) / PageWidth;
             }
         }
 

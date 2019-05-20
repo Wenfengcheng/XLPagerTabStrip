@@ -18,6 +18,8 @@ namespace XLPagerTabStrip
         [GeneratedCode ("iOS Designer", "1.0")]
         public UIKit.UILabel Label { get; set; }
 
+        [Outlet]
+        [GeneratedCode("iOS Designer", "1.0")]
         public UIImageView ImageView { get; set; }
 
         void ReleaseDesignerOutlets ()
@@ -25,6 +27,11 @@ namespace XLPagerTabStrip
             if (Label != null) {
                 Label.Dispose ();
                 Label = null;
+            }
+            if (ImageView != null)
+            {
+                ImageView.Dispose();
+                ImageView = null;
             }
         }
     }

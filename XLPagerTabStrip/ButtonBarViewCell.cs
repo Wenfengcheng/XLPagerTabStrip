@@ -11,22 +11,24 @@ namespace XLPagerTabStrip
             //Label = InitializeLabel();
         }
 
-        private UILabel InitializeLabel()
-        {
-            UILabel label = new UILabel(ContentView.Bounds);
-            label.AutoresizingMask = UIViewAutoresizing.FlexibleWidth | UIViewAutoresizing.FlexibleHeight;
-            label.TextAlignment = UITextAlignment.Center;
-            label.Font = UIFont.BoldSystemFontOfSize(14.0f);
-            return label;
-        }
+        //private UILabel InitializeLabel()
+        //{
+        //    UILabel label = new UILabel(ContentView.Bounds)
+        //    {
+        //        AutoresizingMask = UIViewAutoresizing.FlexibleWidth | UIViewAutoresizing.FlexibleHeight,
+        //        TextAlignment = UITextAlignment.Center,
+        //        Font = UIFont.BoldSystemFontOfSize(14.0f)
+        //    };
+        //    return label;
+        //}
 
-        public override void WillMoveToSuperview(UIView newsuper)
-        {
-            base.WillMoveToSuperview(newsuper);
-            if (Label.Superview != null)
-            {
-                ContentView.AddSubview(Label);
-            }
-        }
+        //public override void WillMoveToSuperview(UIView newsuper)
+        //{
+        //    base.WillMoveToSuperview(newsuper);
+        //    if (Label.Superview != null)
+        //    {
+        //        ContentView.AddSubview(Label);
+        //    }
+        //}
     }
 }
