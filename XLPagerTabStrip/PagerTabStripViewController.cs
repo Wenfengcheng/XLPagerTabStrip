@@ -32,21 +32,24 @@ namespace XLPagerTabStrip
 
         public IPagerTabStripDelegate Delegate;
         public IPagerTabStripDataSource DataSource;
-        
-        public UIScrollView ContainerView { get; set; }
 
-        private UIScrollView InitializeContainerView()
-        {
-            var containerView = new UIScrollView(new CGRect(0, 0, View.Bounds.Width, View.Bounds.Height));
-            containerView.AutoresizingMask = UIViewAutoresizing.FlexibleWidth | UIViewAutoresizing.FlexibleHeight;
-            return containerView;
-        }
-
-        public PagerTabStripBehaviour PagerBehaviour = PagerTabStripBehaviour.Create(true, false);
+        public PagerTabStripBehaviour PagerBehaviour = PagerTabStripBehaviour.Create(true, true);
 
         public UIViewController[] ViewControllers { get; private set; } = new UIViewController[] { };
 
         public uint CurrentIndex { get; private set; } = 0;
+        public uint PreCurrentIndex { get; private set; } = 0;
+
+        public UIScrollView ContainerView { get; set; }
+
+        private UIScrollView InitializeContainerView()
+        {
+            var containerView = new UIScrollView(new CGRect(0, 0, View.Bounds.Width, View.Bounds.Height))
+            {
+                AutoresizingMask = UIViewAutoresizing.FlexibleWidth | UIViewAutoresizing.FlexibleHeight
+            };
+            return containerView;
+        }
 
         public nfloat PageWidth
         {
@@ -59,8 +62,8 @@ namespace XLPagerTabStrip
             {
                 if (SwipeDirection != SwipeDirection.Right)
                 {
-                    nfloat module = ContainerView.ContentOffset.X % PageWidth;
-                    return new nfloat(module == 0.0 ? 1.0 : module / PageWidth);
+                    nfloat module = fmod(ContainerView.ContentOffset.X, PageWidth);
+                    return Math.Abs(module) < nfloat.Epsilon? 1.0f : module / PageWidth;
                 }
 
                 return 1 - fmod(ContainerView.ContentOffset.X >= 0 ? ContainerView.ContentOffset.X : PageWidth + ContainerView.ContentOffset.X, PageWidth) / PageWidth;
@@ -107,12 +110,22 @@ namespace XLPagerTabStrip
             ContainerView.ShowsHorizontalScrollIndicator = false;
             ContainerView.PagingEnabled = true;
             ReloadViewControllers();
+
+            var childController = ViewControllers?[CurrentIndex];
+            this.AddChildViewController(childController);
+            childController.View.AutoresizingMask = UIViewAutoresizing.FlexibleHeight | UIViewAutoresizing.FlexibleWidth;
+            ContainerView.AddSubview(childController.View);
+            childController.DidMoveToParentViewController(this);
         }
 
         public override void ViewWillAppear(bool animated)
         {
             base.ViewWillAppear(animated);
             isViewAppearing = true;
+            foreach (var item in this.ChildViewControllers)
+            {
+                item.BeginAppearanceTransition(true, animated);
+            }
         }
 
         public override void ViewDidAppear(bool animated)
@@ -120,7 +133,33 @@ namespace XLPagerTabStrip
             base.ViewDidAppear(animated);
             lastSize = ContainerView.Bounds.Size;
             UpdateIfNeeded();
+            if(PreCurrentIndex != CurrentIndex)
+            {
+                MoveToViewControllerAtIndex(PreCurrentIndex);
+            }
             isViewAppearing = false;
+            foreach (var item in this.ChildViewControllers)
+            {
+                item.EndAppearanceTransition();
+            }
+        }
+
+        public override void ViewWillDisappear(bool animated)
+        {
+            base.ViewWillDisappear(animated);
+            foreach (var item in this.ChildViewControllers)
+            {
+                item.BeginAppearanceTransition(false, animated);
+            }
+        }
+
+        public override void ViewDidDisappear(bool animated)
+        {
+            base.ViewDidDisappear(animated);
+            foreach (var item in this.ChildViewControllers)
+            {
+                item.EndAppearanceTransition();
+            }
         }
 
         public override void ViewDidLayoutSubviews()
@@ -129,11 +168,13 @@ namespace XLPagerTabStrip
             UpdateIfNeeded();
         }
 
+        public override bool ShouldAutomaticallyForwardAppearanceMethods => true;
+
         public void MoveToViewControllerAtIndex(uint index, bool animated = true)
         {
-            if (!(IsViewLoaded && View.Window != null))
+            if (!(IsViewLoaded && View.Window != null && CurrentIndex != index))
             {
-                CurrentIndex = index;
+                PreCurrentIndex = index;
                 return;
             }
 
@@ -269,8 +310,8 @@ namespace XLPagerTabStrip
                     }
                     else
                     {
-                        AddChildViewController(childController);
                         childController.BeginAppearanceTransition(true, animated: false);
+                        AddChildViewController(childController);
                         childController.View.Frame = new CGRect(OffsetForChildIndex((uint)index), 0, View.Bounds.Width, ContainerView.Bounds.Height);
                         childController.View.AutoresizingMask = UIViewAutoresizing.FlexibleHeight | UIViewAutoresizing.FlexibleWidth;
                         ContainerView.AddSubview(childController.View);
@@ -282,8 +323,8 @@ namespace XLPagerTabStrip
                 {
                     if (childController.ParentViewController != null)
                     {
-                        childController.WillMoveToParentViewController(null);
                         childController.BeginAppearanceTransition(false, animated: false);
+                        childController.WillMoveToParentViewController(null);
                         childController.View.RemoveFromSuperview();
                         childController.RemoveFromParentViewController();
                         childController.EndAppearanceTransition();
@@ -317,9 +358,11 @@ namespace XLPagerTabStrip
                 {
                     if (childController.ParentViewController != null)
                     {
-                        childController.View.RemoveFromSuperview();
+                        childController.BeginAppearanceTransition(false, false);
                         childController.WillMoveToParentViewController(null);
+                        childController.View.RemoveFromSuperview();
                         childController.RemoveFromParentViewController();
+                        childController.EndAppearanceTransition();
                     }
                 }
 
@@ -338,7 +381,10 @@ namespace XLPagerTabStrip
         public void Scrolled(UIScrollView scrollView)
         {
             if (ContainerView == scrollView)
+            {
                 UpdateContent();
+                lastContentOffset = scrollView.ContentOffset.X;
+            }
         }
 
         [Foundation.Export("scrollViewWillBeginDragging:")]
@@ -347,7 +393,6 @@ namespace XLPagerTabStrip
             if (ContainerView == scrollView)
             {
                 lastPageNumber = PageForContentOffset(scrollView.ContentOffset.X);
-                lastContentOffset = scrollView.ContentOffset.X;
             }
         }
 
@@ -433,7 +478,7 @@ namespace XLPagerTabStrip
             {
                 ViewControllers = DataSource.ViewControllersForPagerTabStrip(this);
                 // viewControllers
-                if (ViewControllers.Count() < 1)
+                if (!ViewControllers.Any())
                     throw new Exception("ViewControllersForPagerTabStrip should provide at least one child view controller");
 
                 foreach (UIViewController childController in ViewControllers)
